@@ -1,4 +1,4 @@
-package com.likelion.vlog.entity;
+package com.likelion.vlog.entity.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -12,26 +12,17 @@ import java.util.List;
 
 @Entity
 @Getter @Setter
-@Table(name = "posts")
+@Table(name = "tags")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Post {
+public class Tag {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "post_id")
+    @Column(name = "tag_id")
     private Long id;
 
     private String title;
-    private String content;
 
-    @Column(name = "view_count")
-    private int viewCount;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "blog_id")
-    private Blog blog;
-
-
-    @OneToMany(mappedBy = "post")
+    @OneToMany(mappedBy = "tag", fetch = FetchType.LAZY)
     private List<TagMap> tagMapList = new ArrayList<>();
 
     private LocalDateTime created_at;

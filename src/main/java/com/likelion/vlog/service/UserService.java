@@ -1,7 +1,7 @@
 package com.likelion.vlog.service;
 
 import com.likelion.vlog.dto.UserUpdateDto;
-import com.likelion.vlog.entity.User;
+import com.likelion.vlog.entity.entity.User;
 import com.likelion.vlog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

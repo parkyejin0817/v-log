@@ -1,4 +1,4 @@
-package com.likelion.vlog.entity;
+package com.likelion.vlog.entity.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

@@ -1,4 +1,4 @@
-package com.likelion.vlog.entity;
+package com.likelion.vlog.entity.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -7,23 +7,28 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Getter @Setter
-@Table(name = "tags")
+@Table(name = "follows")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Tag {
+public class Follow {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "tag_id")
+    @Column(name = "follow_id")
     private Long id;
 
-    private String title;
+    // 팔로우 하는사람
+    @ManyToOne (fetch = FetchType.LAZY)
+    @JoinColumn(name = "follower_id")
+    private User follower;
 
-    @OneToMany(mappedBy = "tag", fetch = FetchType.LAZY)
-    private List<TagMap> tagMapList = new ArrayList<>();
+
+    //팔로우 대상
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "following_id")
+    private User following;
+
 
     private LocalDateTime created_at;
     private LocalDateTime updated_at;

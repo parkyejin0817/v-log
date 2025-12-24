@@ -1,10 +1,12 @@
-package com.likelion.vlog.entity;
+package com.likelion.vlog.entity.entity;
 
+import com.likelion.vlog.dto.auth.SignupRequestDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
@@ -14,12 +16,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
     private Long id;
 
-    @OneToOne(mappedBy = "user")
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
     private Blog blog;
 
 //    @OneToMany(mappedBy = "user")
@@ -43,6 +44,14 @@ public class User {
 
     public void updateUpdatedAt() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public static User of(SignupRequestDto signupRequestDto, PasswordEncoder passwordEncoder){
+        User user = new User();
+        user.setEmail(signupRequestDto.getEmail());
+        user.setPassword(passwordEncoder.encode(signupRequestDto.getPassword()));
+        user.setNickname(signupRequestDto.getNickname());
+        return user;
     }
 
 }
