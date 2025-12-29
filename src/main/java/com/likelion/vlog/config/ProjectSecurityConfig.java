@@ -35,7 +35,7 @@ public class ProjectSecurityConfig {
         http.cors(withDefaults());
         http.authorizeHttpRequests(auth -> auth
 
-                        //좋아요는 무조건 인증 필요
+                        //좋아요는 무조건 인증 필요 #테스트
                         .requestMatchers(HttpMethod.POST,"/api/v1/posts/*/like").authenticated()
                         .requestMatchers(HttpMethod.DELETE,"/api/v1/posts/*/like").authenticated()
 

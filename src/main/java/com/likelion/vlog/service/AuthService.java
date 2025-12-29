@@ -46,22 +46,6 @@ public class AuthService implements UserDetailsService {
         return UserGetResponse.of(user);
     }
 
-    public UserDetails loadUserByUserId(String userId){
-        Long id;
-        try {
-            id = Long.parseLong(userId);
-        }catch (NumberFormatException e){
-            throw new UsernameNotFoundException("UserId가 존재하지 않습니다.");
-        }
-        User user = userRepository.findById(id)
-                .orElseThrow(()-> new UsernameNotFoundException("유저를 찾을수 없습니다."));
-
-        return org.springframework.security.core.userdetails.User
-                .withUsername(String.valueOf(user.getId()))
-                .password(user.getPassword())
-                .build();
-    }
-
     private UserDetails toUserDetail(User user){
         return org.springframework.security.core.userdetails.User
                 .builder()
