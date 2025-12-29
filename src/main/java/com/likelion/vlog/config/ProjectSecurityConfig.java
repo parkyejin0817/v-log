@@ -32,9 +32,13 @@ public class ProjectSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws  Exception {
         http.csrf(AbstractHttpConfigurer::disable);
-        // TODO: 프론트엔드 연결 시 CORS 설정 필요 (allowedOrigins, allowCredentials 등)
         http.cors(withDefaults());
         http.authorizeHttpRequests(auth -> auth
+
+                        //좋아요는 무조건 인증 필요
+                        .requestMatchers(HttpMethod.POST,"/api/v1/posts/*/like").authenticated()
+                        .requestMatchers(HttpMethod.DELETE,"/api/v1/posts/*/like").authenticated()
+
                         // 인증 X
                         .requestMatchers(HttpMethod.POST, "/auth/signup", "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/users/**").permitAll()
@@ -44,7 +48,7 @@ public class ProjectSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/logout").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/users/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/users/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/posts").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/posts/**").authenticated() //좋아요 하위경로 허용
                         .requestMatchers(HttpMethod.PUT, "/api/v1/posts/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/posts/**").authenticated()
 
