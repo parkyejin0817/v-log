@@ -2,7 +2,7 @@ spring:
   application:
     name: vlog
   datasource:
-    url: jdbc:mysql://localhost:3307/liondb
+    url: jdbc:mysql://localhost:13306/vlog
     username: root
     password: root1234
 
