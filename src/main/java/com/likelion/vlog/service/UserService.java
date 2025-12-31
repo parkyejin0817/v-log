@@ -72,6 +72,15 @@ public class UserService {
         if (!passwordEncoder.matches(password, user.getPassword())) {
             throw InvalidCredentialsException.password();
         }
+
+        deleteRelationship(userId);
+
+        // 4-5단계: Blog은 cascade=ALL이므로 User 삭제 시 자동 삭제됨
+        userRepository.delete(user);
+    }
+
+
+    private void deleteRelationship(Long userId) {
         // 1단계: User가 직접 작성/생성한 것들 삭제
         commentRepository.deleteAllByUserId(userId);           // 내가 쓴 댓글
         likeRepository.deleteAllByUserId(userId);              // 내가 누른 좋아요
@@ -83,8 +92,6 @@ public class UserService {
         tagMapRepository.deleteAllByPostBlogUserId(userId);    // 내 게시글의 태그들
         // 3단계: User의 Blog에 속한 Post들 삭제
         postRepository.deleteAllByBlogUserId(userId);
-        // 4-5단계: Blog은 cascade=ALL이므로 User 삭제 시 자동 삭제됨
-        userRepository.delete(user);
     }
 
 }

@@ -230,16 +230,151 @@ DTOs는 도메인별로 하위 패키지 구성:
 
 ## 알려진 이슈 및 TODO
 
-### Critical
+### 완료된 Critical 이슈
 - [x] **LikeService**: `IllegalArgumentException`, `IllegalStateException` → 커스텀 예외로 변경 완료
 - [x] **AuthService/UserService**: `IllegalArgumentException` → 커스텀 예외로 변경 완료
 - [x] **FollowService**: `IllegalArgumentException` → 커스텀 예외로 변경 완료
 - [x] **User.java**: `BaseEntity` 상속 완료, `@Setter` 제거 완료
-- [ ] **UserController**: 권한 검증 추가 (본인만 수정/삭제)
+- [x] **UserController**: 권한 검증 완료 (본인만 수정/삭제)
 
-### Enhancement
+### Critical (즉시 수정 필요)
+
+#### 1. CSRF 보호 활성화 (보안)
+- **위치**: `ProjectSecurityConfig.java:36`
+- **문제**: CSRF 완전 비활성화로 세션 기반 인증에서 공격 취약
+- **영향**: 상태 변경 요청(POST, PUT, DELETE)에서 위험
+- **해결**:
+  ```java
+  // 옵션 1: 헤더 기반 CSRF
+  .csrf(csrf -> csrf
+      .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+      .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))
+
+  // 옵션 2: SPA 연동 시
+  .csrf(csrf -> csrf.ignoringRequestMatchers("/api/v1/auth/**"))
+  ```
+
+#### 2. 민감 정보 환경변수화 (보안)
+- **위치**: `application.yaml:5-7`
+- **문제**: DB 비밀번호 평문 저장, Git 노출 위험
+- **해결**:
+  ```yaml
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/vlog}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
+  ```
+
+#### 3. DDL Auto 환경별 분리 (운영 안정성)
+- **위치**: `application.yaml:12`
+- **문제**: 프로덕션에서 `update` 사용 시 데이터 손실 위험
+- **해결**: `application-prod.yaml`에서 `ddl-auto: validate` 또는 `none` 사용
+
+### High Priority (높은 우선순위)
+
+#### 4. N+1 쿼리 해결 (성능)
+- **위치**: `PostService.java`, Post Entity
+- **문제**: 게시글 목록 조회 시 Blog, TagMap 별도 쿼리 발생
+- **해결**: Fetch Join 추가
+  ```java
+  @Query("SELECT DISTINCT p FROM Post p " +
+         "LEFT JOIN FETCH p.blog b " +
+         "LEFT JOIN FETCH b.user " +
+         "LEFT JOIN FETCH p.tagMapList tm " +
+         "LEFT JOIN FETCH tm.tag")
+  Page<Post> findAllWithAssociations(Pageable pageable);
+  ```
+
+#### 5. 데이터베이스 인덱스 추가 (성능)
+- **위치**: Entity 클래스들
+- **문제**: 자주 조회되는 컬럼에 인덱스 없음
+- **해결**:
+  ```java
+  @Table(name = "posts", indexes = {
+      @Index(name = "idx_blog_id", columnList = "blog_id"),
+      @Index(name = "idx_created_at", columnList = "created_at")
+  })
+
+  @Table(name = "likes", indexes = {
+      @Index(name = "idx_user_post", columnList = "user_id, post_id", unique = true)
+  })
+
+  @Table(name = "comments", indexes = {
+      @Index(name = "idx_post_id", columnList = "post_id"),
+      @Index(name = "idx_parent_id", columnList = "parent_id")
+  })
+  ```
+
+#### 6. 동시성 제어 추가 (데이터 정합성)
+- **위치**: `Post.java:57-66` (like/unlike 메서드)
+- **문제**: 동시 좋아요 클릭 시 count 불일치 가능
+- **해결**:
+  ```java
+  // 옵션 1: @Version 낙관적 락
+  @Version
+  private Long version;
+
+  // 옵션 2: DB 레벨 원자적 연산
+  @Modifying
+  @Query("UPDATE Post p SET p.likeCount = p.likeCount + 1 WHERE p.id = :postId")
+  void incrementLikeCount(@Param("postId") Long postId);
+  ```
+
+#### 7. 트랜잭션 범위 최적화 (성능)
+- **위치**: `UserService.deleteUser()`
+- **문제**: 하나의 큰 트랜잭션으로 성능 저하
+- **해결**: 메서드 분리 및 트랜잭션 전파 설정
+
+### Medium Priority (중간 우선순위)
+
+#### 8. API 경로 표준화
+- **문제**: `/users/{id}` vs `/api/v1/posts/{id}` 불일치
+- **해결**: 모든 엔드포인트를 `/api/v1`로 통일
+
+#### 9. DTO Validation 추가
+- **문제**: Request DTO에 검증 애노테이션 없음
+- **해결**: `@Valid`, `@NotNull`, `@Size` 등 추가
+
+#### 10. 로깅 전략 수립
+- **문제**: 비즈니스 로직에 로깅 없음
+- **해결**: `@Slf4j` 추가 및 주요 지점에 로그 기록
+
+#### 11. 페이징 최적화
+- **문제**: Offset 방식은 대량 데이터에서 성능 저하
+- **해결**: Cursor 기반 페이징 추가 고려
+
+#### 12. Exception 메시지 국제화
+- **문제**: 모든 예외 메시지 한국어 하드코딩
+- **해결**: `messages.properties` 사용
+
+### Low Priority (낮은 우선순위)
+
+#### 13. Soft Delete 지원
+- **해결**: `@SQLDelete`, `@Where` 사용하여 논리 삭제 구현
+
+#### 14. 캐싱 전략 도입
+- **해결**: `@Cacheable`, `@CacheEvict` 사용 (인기 게시글, 태그 목록 등)
+
+#### 15. API 버전 관리 전략
+- **해결**: 헤더 기반 버전 관리 또는 URL 분리
+
+#### 16. 프로파일 전략 개선
+- **해결**: `application-dev.yaml`, `application-prod.yaml` 분리
+
+### Enhancement (기능 추가)
 - [ ] **팔로우 기능**: FollowController, FollowService 구현
 - [ ] **CORS 설정**: 프론트엔드 연결 시 `ProjectSecurityConfig`에서 allowedOrigins 등 설정
 - [ ] **TagController**: 현재 비어있음, 태그 조회 API 추가 가능
 - [ ] **좋아요 토글 API**: 단일 엔드포인트로 POST/DELETE 통합 고려
-- [ ] **DDL 운영 모드**: 프로덕션에서 `validate`로 변경 (현재 `update`)
+
+## 우선순위 매트릭스
+
+| 우선순위 | 개선 항목 | 영향도 | 난이도 |
+|---------|----------|-------|-------|
+| Critical | CSRF 보호 활성화 | ⚠️⚠️⚠️ | 낮음 |
+| Critical | DB 비밀번호 환경변수화 | ⚠️⚠️⚠️ | 낮음 |
+| Critical | DDL Auto 환경별 분리 | ⚠️⚠️⚠️ | 낮음 |
+| High | N+1 쿼리 해결 | ⚡⚡⚡ | 중간 |
+| High | 데이터베이스 인덱스 추가 | ⚡⚡⚡ | 낮음 |
+| High | 동시성 제어 추가 | ⚡⚡ | 중간 |
+| High | 트랜잭션 범위 최적화 | ⚡⚡ | 중간 |
